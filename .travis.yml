@@ -31,7 +31,7 @@ script:
   - flake8 --version
   - flake8 src
   - flake8 --exclude=src,docs --extend-ignore=D
-  - coverage run -m nose2 -c setup.cfg
+  - pytest --cov=dowel
   - pushd docs && make html && popd
 
 after_script:

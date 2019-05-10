@@ -1,7 +1,6 @@
 from setuptools import find_packages
 from setuptools import setup
 
-
 # Required dependencies
 required = [
     # Please keep alphabetized
@@ -27,12 +26,12 @@ extras['dev'] = [
     'pep8-naming',
     'pre-commit',
     'pylint',
-    'nose2',
+    'pytest>=3.6',  # Required for pytest-cov on Python 3.6
+    'pytest-cov',
     'sphinx',
     'recommonmark',
     'yapf',
 ]
-
 
 with open('README.md') as f:
     readme = f.read()
