@@ -2,7 +2,7 @@
 from os import path as osp
 import pickle
 
-from garage.misc.console import mkdir_p
+from dowel.utils import mkdir_p
 
 
 class Snapshotter:

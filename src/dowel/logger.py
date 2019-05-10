@@ -18,9 +18,9 @@ The logger has 4 major steps:
     It is necessary for some LogOutput subclasses, like TensorBoardOutput.
 
 
-# Here's a demonstration of garage's logger:
+# Here's a demonstration of dowel:
 
-from garage.logger import logger
+from dowel import logger
 
 +------+
 |logger|
@@ -29,7 +29,7 @@ from garage.logger import logger
 # Let's add an output to the logger. We want to log to the console, so we'll
 #  add a StdOutput.
 
-from garage.logger import StdOutput
+from dowel import StdOutput
 logger.add_output(StdOutput())
 
 +------+      +---------+
@@ -38,17 +38,17 @@ logger.add_output(StdOutput())
 
 # Great! Now we can start logging text.
 
-logger.log('Hello Garage')
+logger.log('Hello dowel')
 
-# This will go straight to the console as 'Hello Garage'
+# This will go straight to the console as 'Hello dowel'
 
 +------+                    +---------+
-|logger+---'Hello Garage'--->StdOutput|
+|logger+---'Hello dowel'--->StdOutput|
 +------+                    +---------+
 
 # Let's try adding another output.
 
-from garage.logger import TextOutput
+from dowel import TextOutput
 logger.add_output(TextOutput('log_folder/log.txt'))
 
               +---------+
@@ -61,7 +61,7 @@ logger.add_output(TextOutput('log_folder/log.txt'))
 
 # And another output.
 
-from garage.logger import CsvOutput
+from dowel import CsvOutput
 logger.add_output(CsvOutput('log_folder/table.csv'))
 
               +---------+
@@ -101,7 +101,7 @@ logger.log('test')
 # Here's a more complex example.
 # TabularInput, instantiated for you as the tabular, can log key/value pairs.
 
-from garage.logger import tabular
+from dowel import tabular
 tabular.record('key', 72)
 tabular.record('foo', 'bar')
 logger.log(tabular)
@@ -135,7 +135,7 @@ import abc
 import contextlib
 import warnings
 
-from garage.misc.console import colorize
+from dowel.utils import colorize
 
 
 class LogOutput(abc.ABC):

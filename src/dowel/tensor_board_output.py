@@ -1,6 +1,6 @@
-"""A `garage.logger.LogOutput` for tensorboard.
+"""A `dowel.logger.LogOutput` for tensorboard.
 
-It receives the input data stream from `garage.logger`, then add them to
+It receives the input data stream from `dowel.logger`, then add them to
 tensorboard summary operations through tensorboardX.
 
 Note:
@@ -13,12 +13,12 @@ import functools
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
-import tensorboardX as tbx
+import tensorboardX as tbX
 import tensorflow as tf
 
-from garage.logger import Histogram
-from garage.logger import LogOutput
-from garage.logger import TabularInput
+from dowel import Histogram
+from dowel import LogOutput
+from dowel import TabularInput
 
 
 class TensorBoardOutput(LogOutput):
@@ -31,7 +31,7 @@ class TensorBoardOutput(LogOutput):
     """
 
     def __init__(self, log_dir, flush_secs=120, histogram_samples=1e3):
-        self._writer = tbx.SummaryWriter(log_dir, flush_secs=flush_secs)
+        self._writer = tbX.SummaryWriter(log_dir, flush_secs=flush_secs)
         self._default_step = 0
         self._histogram_samples = int(histogram_samples)
         self._added_graph = False
@@ -78,7 +78,7 @@ class TensorBoardOutput(LogOutput):
 
     def _record_graph(self, graph):
         graph_def = graph.as_graph_def(add_shapes=True)
-        event = tbx.proto.event_pb2.Event(
+        event = tbX.proto.event_pb2.Event(
             graph_def=graph_def.SerializeToString())
         self._writer.file_writer.add_event(event)
 

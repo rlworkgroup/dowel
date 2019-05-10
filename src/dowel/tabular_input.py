@@ -1,11 +1,11 @@
-"""A `garage.logger` input for tabular (key-value) data."""
+"""A `dowel.logger` input for tabular (key-value) data."""
 import contextlib
 import warnings
 
 import numpy as np
 import tabulate
 
-from garage.misc.console import colorize
+from dowel.utils import colorize
 
 
 class TabularInput:

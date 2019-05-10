@@ -1,10 +1,10 @@
-"""A `garage.logger.LogOutput` for CSV files."""
+"""A `dowel.logger.LogOutput` for CSV files."""
 import csv
 import warnings
 
-from garage.logger import TabularInput
-from garage.logger.simple_outputs import FileOutput
-from garage.misc.console import colorize
+from dowel import TabularInput
+from dowel.simple_outputs import FileOutput
+from dowel.utils import colorize
 
 
 class CsvOutput(FileOutput):

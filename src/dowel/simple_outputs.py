@@ -9,9 +9,9 @@ import sys
 
 import dateutil.tz
 
-from garage.logger import LogOutput
-from garage.logger.tabular_input import TabularInput
-from garage.misc.console import mkdir_p
+from dowel import LogOutput
+from dowel.tabular_input import TabularInput
+from dowel.utils import mkdir_p
 
 
 class StdOutput(LogOutput):
