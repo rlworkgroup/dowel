@@ -56,7 +56,7 @@ class TestTensorBoardOutputMocked(TBOutputTest):
         foo = tf.constant(5)  # noqa: F841
         self.tensor_board_output.record(self.graph)
 
-        self.mock_writer.file_writer.add_event.assert_called_once()
+        assert self.mock_writer.file_writer.add_event.call_count == 1
 
     def test_record_scalar(self):
         foo = 5
