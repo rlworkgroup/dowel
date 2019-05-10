@@ -4,7 +4,7 @@
 # create a broken PyPI distribution.
 include LICENSE
 include README.md
-# include CONTRIBUTING.md
+include CONTRIBUTING.md
 
 # tests
 graft tests
