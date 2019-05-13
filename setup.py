@@ -11,7 +11,6 @@ required = [
     'tabulate',
     'tensorboardX',
     'tensorflow',
-    'tensorflow-probability',
 ]
 
 extras = dict()
