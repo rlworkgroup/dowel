@@ -2,7 +2,13 @@
 [![codecov](https://codecov.io/gh/rlworkgroup/dowel/branch/master/graph/badge.svg)](https://codecov.io/gh/rlworkgroup/dowel)
 [![Docs](https://readthedocs.org/projects/dowel/badge)](http://dowel.readthedocs.org/en/latest/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/rlworkgroup/dowel/blob/master/LICENSE)
+[![PyPI version](https://badge.fury.io/py/dowel.svg)](https://badge.fury.io/py/dowel)
 
 # dowel
 
 dowel is a little logger for machine learning research.
+
+## Installation
+```shell
+pip install dowel
+```
