@@ -14,12 +14,14 @@ jobs:
     # special deploy stage for tag builds ONLY
     - stage: deploy
       if: tag IS present
-      script: skip
+      script:
+        - echo "${TRAVIS_TAG}" > VERSION
       after_script: skip
       deploy:
         provider: pypi
         user: "${PYPI_USERNAME}"
         password: "${PYPI_PASSWORD}"
+        skip_cleanup: true
         on:
           tags: true
 

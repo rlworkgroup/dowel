@@ -1,9 +1,10 @@
 # project metadata
 #
-# NOTE: README.md is required to run setup.py. Failure to include it will
-# create a broken PyPI distribution.
-include LICENSE
+# NOTE: README.md and VERSION are required to run setup.py. Failure to include
+# them will create a broken PyPI distribution.
 include README.md
+include VERSION
+include LICENSE
 include CONTRIBUTING.md
 
 # tests
