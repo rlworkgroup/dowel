@@ -9,19 +9,19 @@ python:
   - "3.6"
   - "3.7"
 
-# jobs:
-#   include:
-#     # special deploy stage for tag builds ONLY
-#     - stage: deploy
-#       if: tag IS present
-#       script: skip
-#       after_script: skip
-#       deploy:
-#         provider: pypi
-#         user: "${PYPI_USERNAME}"
-#         password: "${PYPI_PASSWORD}"
-#         on:
-#           tags: true
+jobs:
+  include:
+    # special deploy stage for tag builds ONLY
+    - stage: deploy
+      if: tag IS present
+      script: skip
+      after_script: skip
+      deploy:
+        provider: pypi
+        user: "${PYPI_USERNAME}"
+        password: "${PYPI_PASSWORD}"
+        on:
+          tags: true
 
 before_install:
   - pip install --upgrade pip  # some TravisCI images have outdated pip
