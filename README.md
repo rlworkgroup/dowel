@@ -6,3 +6,8 @@
 # dowel
 
 dowel is a little logger for machine learning research.
+
+## Installation
+```shell
+pip install dowel
+```
