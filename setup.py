@@ -35,9 +35,8 @@ extras['dev'] = [
 with open('README.md') as f:
     readme = f.read()
 
-# Get the package version dynamically
-exec(open('./src/dowel/__version__.py').read())
-version = __version__  # noqa: F821, pylint: disable=undefined-variable
+with open('VERSION') as v:
+    version = v.read().strip()
 
 setup(
     name='dowel',

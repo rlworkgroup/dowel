@@ -17,9 +17,9 @@ import sys
 
 from recommonmark.parser import CommonMarkParser
 
-# Get __version__ dynamically
-exec(open('../src/dowel/__version__.py').read())
-version_ = __version__  # noqa: undefined-name
+# Get version dynamically
+with open('../VERSION') as v:
+    version_ = v.read().strip()
 
 # For sphinx-apidoc
 sys.path.insert(0, os.path.abspath('../src/'))
