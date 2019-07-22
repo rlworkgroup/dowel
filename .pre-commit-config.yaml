@@ -44,6 +44,7 @@ repos:
     -   id: yapf
         name: Check format by yapf
         args: ['-dpr']
+
 # Second pass: format in-place
 -   repo: https://github.com/pre-commit/mirrors-yapf
     rev: v0.25.0
