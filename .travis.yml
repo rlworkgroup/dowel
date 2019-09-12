@@ -19,8 +19,8 @@ jobs:
       after_script: skip
       deploy:
         provider: pypi
-        user: "${PYPI_USERNAME}"
-        password: "${PYPI_PASSWORD}"
+        user: "__token__"
+        password: "${PYPI_TOKEN}"
         skip_cleanup: true
         on:
           tags: true
