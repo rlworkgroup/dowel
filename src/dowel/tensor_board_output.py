@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy.stats
 import tensorboardX as tbX
-import tensorflow as tf
+try:
+    import tensorflow as tf
+except ImportError:
+    tf = None
 
 from dowel import Histogram
 from dowel import LogOutput
@@ -36,11 +39,16 @@ class TensorBoardOutput(LogOutput):
         self._histogram_samples = int(histogram_samples)
         self._added_graph = False
         self._waiting_for_dump = []
+        # Used in tests to emulate Tensorflow not being installed.
+        self._tf = tf
 
     @property
     def types_accepted(self):
         """Return the types that the logger may pass to this output."""
-        return (TabularInput, tf.Graph)
+        if self._tf is None:
+            return (TabularInput, )
+        else:
+            return (TabularInput, self._tf.Graph)
 
     def record(self, data, prefix=''):
         """
@@ -52,7 +60,7 @@ class TensorBoardOutput(LogOutput):
         if isinstance(data, TabularInput):
             self._waiting_for_dump.append(
                 functools.partial(self._record_tabular, data))
-        elif isinstance(data, tf.Graph):
+        elif self._tf is not None and isinstance(data, self._tf.Graph):
             self._record_graph(data)
         else:
             raise ValueError('Unacceptable type.')

@@ -10,10 +10,13 @@ required = [
     'scipy',
     'tabulate',
     'tensorboardX',
-    'tensorflow',
 ]
 
 extras = dict()
+
+extras['tensorflow'] = ['tensorflow']
+
+extras['all'] = list(set(sum(extras.values(), [])))
 
 # Development dependencies (*not* included in "all")
 extras['dev'] = [

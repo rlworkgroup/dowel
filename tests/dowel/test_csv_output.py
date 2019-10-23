@@ -1,9 +1,29 @@
 import csv
+import sys
 import tempfile
 import unittest
+import warnings
 
 from dowel import CsvOutput, TabularInput
 from dowel.csv_output import CsvOutputWarning
+
+
+def patched_assert_warns(self):
+    # Stolen from cpython PR#4800. Fixes assertWarns in the presence of modules
+    # that import in response to getattr calls.
+    # The __warningregistry__'s need to be in a pristine state for tests
+    # to work properly.
+    for v in list(sys.modules.values()):
+        if getattr(v, '__warningregistry__', None):
+            v.__warningregistry__ = {}
+    self.warnings_manager = warnings.catch_warnings(record=True)
+    self.warnings = self.warnings_manager.__enter__()
+    warnings.simplefilter('always', self.expected)
+    return self
+
+
+# This is a hack we should undo when cpython#4800 is merged.
+unittest.case._AssertWarnsContext.__enter__ = patched_assert_warns
 
 
 class TestCsvOutput(unittest.TestCase):
