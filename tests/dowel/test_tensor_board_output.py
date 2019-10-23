@@ -138,3 +138,26 @@ class TestTensorBoardOutputMocked(TBOutputTest):
         with self.assertRaises(ValueError):
             foo = np.zeros((3, 10))
             self.tensor_board_output.record(foo)
+
+    def test_record_tabular_without_tensorflow(self):
+        # Emulate not importing Tensorflow
+        self.tensor_board_output._tf = None
+        foo = 5
+        bar = 10.0
+        self.tabular.record('foo', foo)
+        self.tabular.record('bar', bar)
+        self.tensor_board_output.record(self.tabular, prefix='a/')
+        self.tensor_board_output.dump()
+
+        self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
+        self.mock_writer.add_scalar.assert_any_call('bar', bar, 0)
+
+    def test_types_accepted(self):
+        assert TabularInput in self.tensor_board_output.types_accepted
+        assert tf.Graph in self.tensor_board_output.types_accepted
+
+    def test_types_accepted_without_tensorflow(self):
+        # Emulate not importing Tensorflow
+        self.tensor_board_output._tf = None
+        assert TabularInput in self.tensor_board_output.types_accepted
+        assert tf.Graph not in self.tensor_board_output.types_accepted

@@ -29,7 +29,7 @@ before_install:
   - pip install --upgrade pip  # some TravisCI images have outdated pip
 
 install:
-  - pip install .[dev]
+  - pip install .[all,dev]
 
 script:
   - scripts/travisci/check_precommit.sh
