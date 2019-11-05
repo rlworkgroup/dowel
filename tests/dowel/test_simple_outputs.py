@@ -125,6 +125,36 @@ class TestStdOutput(unittest.TestCase):
         self.str_out.seek(0)
         assert self.str_out.read() == tab
 
+    def test_record_tabular_line_markers(self, mock_datetime):
+        fake_timestamp(mock_datetime)
+
+        self.tabular.record('a', 100)
+        self.tabular.record('bbbbbbb', 55)
+        self.tabular.record('ccccc', 55)
+        self.tabular.record('d', 55)
+        self.tabular.record('ee', 55)
+        self.tabular.record('ff', 55)
+
+        with redirect_stdout(self.str_out):
+            self.std_output.record(self.tabular)
+
+        self.std_output.dump()
+
+        tab = (
+            '-------  ---\n'
+            'a        100\n'
+            'bbbbbbb   55\n'
+            'ccccc     55\n'
+            'd  . .    55\n'
+            'ee        55\n'
+            'ff . .    55\n'
+            '-------  ---\n'
+        )  # yapf: disable
+        self.str_out.seek(0)
+        output = self.str_out.read()
+        print(output)
+        assert output == tab
+
     def test_record_with_timestamp(self, mock_datetime):
         fake_timestamp(mock_datetime)
 
