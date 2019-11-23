@@ -4,7 +4,7 @@ It receives the input data stream from `dowel.logger`, then add them to
 tensorboard summary operations through tensorboardX.
 
 Note:
-Neither tensorboardX or TensorBoard does not support log parametric
+Neither TensorboardX nor TensorBoard supports log parametric
 distributions. We add this feature by sampling data from a
 `tfp.distributions.Distribution` object.
 """
@@ -21,6 +21,7 @@ except ImportError:
 
 from dowel import Histogram
 from dowel import LogOutput
+from dowel import LoggerWarning
 from dowel import TabularInput
 
 
@@ -33,8 +34,13 @@ class TensorBoardOutput(LogOutput):
     and events to disk.
     """
 
-    def __init__(self, log_dir, flush_secs=120, histogram_samples=1e3):
+    def __init__(self,
+                 log_dir,
+                 x_axes=None,
+                 flush_secs=120,
+                 histogram_samples=1e3):
         self._writer = tbX.SummaryWriter(log_dir, flush_secs=flush_secs)
+        self._x_axes = x_axes
         self._default_step = 0
         self._histogram_samples = int(histogram_samples)
         self._added_graph = False
@@ -66,9 +72,29 @@ class TensorBoardOutput(LogOutput):
             raise ValueError('Unacceptable type.')
 
     def _record_tabular(self, data, step):
+        nonexist_axes = set()
+        custom_axes = True if self._x_axes else False
+
+        if self._x_axes:
+            for axis in self._x_axes:
+                if axis not in data.as_dict:
+                    nonexist_axes.add(axis)
+
+        custom_axes = custom_axes and not (len(nonexist_axes) == len(
+            self._x_axes))
+
         for key, value in data.as_dict.items():
-            self._record_kv(key, value, step)
+            if isinstance(value, np.ScalarType) and custom_axes:
+                for axis in self._x_axes:
+                    if axis not in nonexist_axes and key is not axis:
+                        x = data.as_dict[axis]
+                        self._record_kv('{}/{}'.format(axis, key), value, x)
+            else:
+                self._record_kv(key, value, step)
             data.mark(key)
+
+        if len(nonexist_axes) > 0:
+            raise NonexistentAxesError(list(nonexist_axes))
 
     def _record_kv(self, key, value, step):
         if isinstance(value, np.ScalarType):
@@ -106,3 +132,20 @@ class TensorBoardOutput(LogOutput):
     def close(self):
         """Flush all the events to disk and close the file."""
         self._writer.close()
+
+
+class NonexistentAxesError(LoggerWarning):
+    """Raise when the specified x axes do not exist in the tabular.
+
+    Args:
+        axes: Name of nonexistent axes.
+
+    """
+
+    def __init__(self, axes):
+        self.axes = axes
+
+    def to_string(self):
+        return '{} {} exist in the tabular data.'.format(
+            ', '.join(self.axes),
+            'do not' if len(self.axes) > 1 else 'does not')

@@ -13,17 +13,24 @@ from tests.fixtures import TfGraphTestCase
 
 
 class TBOutputTest(TfGraphTestCase):
+    x_axes = None
+
     def setUp(self):
         super().setUp()
         self.log_dir = tempfile.TemporaryDirectory()
         self.tabular = TabularInput()
         self.tabular.clear()
-        self.tensor_board_output = TensorBoardOutput(self.log_dir.name)
+        self.tensor_board_output = TensorBoardOutput(
+            self.log_dir.name, x_axes=self.x_axes)
 
     def tearDown(self):
         self.tensor_board_output.close()
         self.log_dir.cleanup()
         super().tearDown()
+
+    @classmethod
+    def setXAxes(cls, x_axes):
+        cls.x_axes = x_axes
 
 
 class TestTensorBoardOutput(TBOutputTest):
@@ -161,3 +168,28 @@ class TestTensorBoardOutputMocked(TBOutputTest):
         self.tensor_board_output._tf = None
         assert TabularInput in self.tensor_board_output.types_accepted
         assert tf.Graph not in self.tensor_board_output.types_accepted
+
+
+class TestTensorBoardOutputXAxesMocked(TBOutputTest):
+    """Test custom x axes."""
+
+    def run(self, result=None):
+        with mock.patch('tensorboardX.SummaryWriter'):
+            super().run(result)
+
+    def setUp(self):
+        self.setXAxes(['foo', 'bar'])
+        super().setUp()
+        self.mock_writer = self.tensor_board_output._writer
+
+    def test_record_scalar(self):
+        foo = 5
+        bar = 10.0
+        self.tabular.record('foo', foo)
+        self.tabular.record('bar', bar)
+        self.tensor_board_output.record(self.tabular)
+        self.tensor_board_output.dump()
+
+        self.mock_writer.add_scalar.assert_any_call('bar/foo', foo, bar)
+        self.mock_writer.add_scalar.assert_any_call('foo/bar', bar, foo)
+        assert self.mock_writer.add_scalar.call_count == 2

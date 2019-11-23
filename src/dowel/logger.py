@@ -267,7 +267,10 @@ class Logger:
         """
         for output in self._outputs:
             if isinstance(output, output_type):
-                output.dump(step=step)
+                try:
+                    output.dump(step=step)
+                except LoggerWarning as e:
+                    self._warn(e.to_string())
 
     def dump_all(self, step=None):
         """Dump all outputs connected to the logger.
@@ -275,7 +278,10 @@ class Logger:
         :param step: The current run step.
         """
         for output in self._outputs:
-            output.dump(step=step)
+            try:
+                output.dump(step=step)
+            except LoggerWarning as e:
+                self._warn(e.to_string())
 
     @contextlib.contextmanager
     def prefix(self, prefix):
@@ -328,4 +334,6 @@ class Logger:
 class LoggerWarning(UserWarning):
     """Warning class for the Logger."""
 
-    pass
+    @abc.abstractmethod
+    def to_string(self):
+        raise NotImplementedError
