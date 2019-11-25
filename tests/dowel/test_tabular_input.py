@@ -1,12 +1,14 @@
 import math
-import unittest
+
+import pytest
 
 from dowel import TabularInput
 from dowel.tabular_input import TabularInputWarning
 
 
-class TestTabularInput(unittest.TestCase):
-    def setUp(self):
+class TestTabularInput:
+
+    def setup_method(self):
         self.tabular = TabularInput()
 
     def test_str(self):
@@ -51,7 +53,7 @@ class TestTabularInput(unittest.TestCase):
             'MinBar': 1,
             'MaxBar': 10,
         }
-        self.assertDictEqual(self.tabular.as_dict, correct)
+        assert self.tabular.as_dict == correct
 
     def test_record_misc_stat_nan(self):
         self.tabular.record_misc_stat('none', None)
@@ -74,7 +76,7 @@ class TestTabularInput(unittest.TestCase):
             self.tabular.record('bar', bar)
 
         correct = {'test_foo': foo, 'test_bar': bar}
-        self.assertDictEqual(self.tabular.as_dict, correct)
+        assert self.tabular.as_dict == correct
 
     def test_clear(self):
         foo = 1
@@ -90,7 +92,7 @@ class TestTabularInput(unittest.TestCase):
     def test_clear_warns_not_recorded_once(self):
         self.tabular.record('foo', 1)
 
-        with self.assertWarns(TabularInputWarning):
+        with pytest.warns(TabularInputWarning):
             self.tabular.clear()
 
         self.tabular.record('foo', 1)
@@ -100,7 +102,7 @@ class TestTabularInput(unittest.TestCase):
     def test_disable_warnings(self):
         self.tabular.record('foo', 1)
 
-        with self.assertWarns(TabularInputWarning):
+        with pytest.warns(TabularInputWarning):
             self.tabular.clear()
 
         self.tabular.record('bar', 2)
@@ -125,7 +127,7 @@ class TestTabularInput(unittest.TestCase):
             'aaa_bbb_foo': foo,
             'aaa_bbb_bar': bar,
         }
-        self.assertDictEqual(self.tabular.as_dict, correct)
+        assert self.tabular.as_dict == correct
 
     def test_pop_prefix(self):
         foo = 111
@@ -153,7 +155,7 @@ class TestTabularInput(unittest.TestCase):
             'foopop': foo,
             'barpop': bar,
         }
-        self.assertDictEqual(self.tabular.as_dict, correct)
+        assert self.tabular.as_dict == correct
 
     def test_as_primitive_dict(self):
         stuff = {
@@ -172,4 +174,4 @@ class TestTabularInput(unittest.TestCase):
             'bool': bool(True),
             'str': str('Hello, world!'),
         }
-        self.assertDictEqual(self.tabular.as_primitive_dict, correct)
+        assert self.tabular.as_primitive_dict == correct

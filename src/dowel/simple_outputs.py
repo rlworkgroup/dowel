@@ -40,7 +40,7 @@ class StdOutput(LogOutput):
             out = str(data)
             data.mark_str()
         else:
-            raise ValueError("Unacceptable type")
+            raise ValueError('Unacceptable type')
 
         print(out)
 
@@ -100,6 +100,6 @@ class TextOutput(FileOutput):
             out = str(data)
             data.mark_str()
         else:
-            raise ValueError("Unacceptable type.")
+            raise ValueError('Unacceptable type.')
 
         self._log_file.write(out + '\n')
