@@ -21,8 +21,8 @@ except ImportError:
     tf = None
 
 from dowel import Histogram
-from dowel import LogOutput
 from dowel import LoggerWarning
+from dowel import LogOutput
 from dowel import TabularInput
 from dowel.utils import colorize
 

@@ -202,3 +202,19 @@ class TestTensorBoardOutputXAxesMocked(TBOutputTest):
         self.mock_writer.add_scalar.assert_any_call('foo@bar', foo, bar)
         self.mock_writer.add_scalar.assert_any_call('bar', bar, foo)
         assert self.mock_writer.add_scalar.call_count == 2
+
+    def test_record_scalar_nonexistent_axis(self):
+        self.tensor_board_output._default_step = 0
+        self.tensor_board_output._x_axis = 'qux'
+        self.tensor_board_output._additional_x_axes = ['bar']
+
+        foo = 5
+        bar = 10.0
+        self.tabular.record('foo', foo)
+        self.tabular.record('bar', bar)
+        self.tensor_board_output.record(self.tabular)
+        self.tensor_board_output.dump()
+
+        self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
+        self.mock_writer.add_scalar.assert_any_call('bar', bar, 0)
+        assert self.mock_writer.add_scalar.call_count == 2
