@@ -327,7 +327,3 @@ class Logger:
 
 class LoggerWarning(UserWarning):
     """Warning class for the Logger."""
-
-    @abc.abstractmethod
-    def to_string(self):
-        raise NotImplementedError

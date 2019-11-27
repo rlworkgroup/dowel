@@ -50,7 +50,7 @@ class TensorBoardOutput(LogOutput):
                  histogram_samples=1e3):
         if x_axis is None:
             assert not additional_x_axes, (
-                'You have to specify a x_axis if you want additional axes.')
+                'You have to specify an x_axis if you want additional axes.')
 
         additional_x_axes = additional_x_axes or []
 
