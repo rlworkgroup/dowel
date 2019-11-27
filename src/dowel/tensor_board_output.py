@@ -166,10 +166,6 @@ class TensorBoardOutput(LogOutput):
         self._warned_once.add(msg)
         return msg
 
-    def disable_warnings(self):
-        """Disable logger warnings for testing."""
-        self._disable_warnings = True
-
 
 class NonexistentAxesWarning(LoggerWarning):
     """Raise when the specified x axes do not exist in the tabular."""
