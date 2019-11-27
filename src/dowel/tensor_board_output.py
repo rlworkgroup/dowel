@@ -9,6 +9,7 @@ distributions. We add this feature by sampling data from a
 `tfp.distributions.Distribution` object.
 """
 import functools
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,30 +24,48 @@ from dowel import Histogram
 from dowel import LogOutput
 from dowel import LoggerWarning
 from dowel import TabularInput
+from dowel.utils import colorize
 
 
 class TensorBoardOutput(LogOutput):
-    """
-    TensorBoard output for logger.
+    """TensorBoard output for logger.
 
-    :param log_dir(str): The save location of the tensorboard event files.
-    :param flush_secs(int): How often, in seconds, to flush the added summaries
-    and events to disk.
+    Args:
+        log_dir(str): The save location of the tensorboard event files.
+        x_axis(str): The name of data used as x-axis for scalar tabular.
+            If None, x-axis will be the number of dump() is called.
+        additional_x_axes(list[str]): Names of data to used be as additional
+            x-axes.
+        flush_secs(int): How often, in seconds, to flush the added summaries
+            and events to disk.
+        histogram_samples(int): Number of samples to generate when logging
+            random distribution.
     """
 
     def __init__(self,
                  log_dir,
-                 x_axes=None,
+                 x_axis=None,
+                 additional_x_axes=None,
                  flush_secs=120,
                  histogram_samples=1e3):
+        if x_axis is None:
+            assert not additional_x_axes, (
+                'You have to specify a x_axis if you want additional axes.')
+
+        additional_x_axes = additional_x_axes or []
+
         self._writer = tbX.SummaryWriter(log_dir, flush_secs=flush_secs)
-        self._x_axes = x_axes
+        self._x_axis = x_axis
+        self._additional_x_axes = additional_x_axes
         self._default_step = 0
         self._histogram_samples = int(histogram_samples)
         self._added_graph = False
         self._waiting_for_dump = []
         # Used in tests to emulate Tensorflow not being installed.
         self._tf = tf
+
+        self._warned_once = set()
+        self._disable_warnings = False
 
     @property
     def types_accepted(self):
@@ -57,11 +76,12 @@ class TensorBoardOutput(LogOutput):
             return (TabularInput, self._tf.Graph)
 
     def record(self, data, prefix=''):
-        """
-        Add data to tensorboard summary.
+        """Add data to tensorboard summary.
 
-        :param data: The data to be logged by the output.
-        :param prefix(str): A prefix placed before a log entry in text outputs.
+        Args:
+            data: The data to be logged by the output.
+            prefix(str): A prefix placed before a log entry in text outputs.
+
         """
         if isinstance(data, TabularInput):
             self._waiting_for_dump.append(
@@ -72,29 +92,30 @@ class TensorBoardOutput(LogOutput):
             raise ValueError('Unacceptable type.')
 
     def _record_tabular(self, data, step):
-        nonexist_axes = set()
-        custom_axes = True if self._x_axes else False
-
-        if self._x_axes:
-            for axis in self._x_axes:
+        if self._x_axis:
+            nonexist_axes = []
+            for axis in [self._x_axis] + self._additional_x_axes:
                 if axis not in data.as_dict:
-                    nonexist_axes.add(axis)
-
-        custom_axes = custom_axes and not (len(nonexist_axes) == len(
-            self._x_axes))
+                    nonexist_axes.append(axis)
+            if nonexist_axes:
+                self._warn('{} {} exist in the tabular data.'.format(
+                    ', '.join(nonexist_axes),
+                    'do not' if len(nonexist_axes) > 1 else 'does not'))
 
         for key, value in data.as_dict.items():
-            if isinstance(value, np.ScalarType) and custom_axes:
-                for axis in self._x_axes:
-                    if axis not in nonexist_axes and key is not axis:
+            if isinstance(value,
+                          np.ScalarType) and self._x_axis in data.as_dict:
+                if self._x_axis is not key:
+                    x = data.as_dict[self._x_axis]
+                    self._record_kv(key, value, x)
+
+                for axis in self._additional_x_axes:
+                    if key is not axis and key in data.as_dict:
                         x = data.as_dict[axis]
-                        self._record_kv('{}/{}'.format(axis, key), value, x)
+                        self._record_kv('{}@{}'.format(key, axis), value, x)
             else:
                 self._record_kv(key, value, step)
             data.mark(key)
-
-        if len(nonexist_axes) > 0:
-            raise NonexistentAxesError(list(nonexist_axes))
 
     def _record_kv(self, key, value, step):
         if isinstance(value, np.ScalarType):
@@ -133,19 +154,22 @@ class TensorBoardOutput(LogOutput):
         """Flush all the events to disk and close the file."""
         self._writer.close()
 
+    def _warn(self, msg):
+        """Warns the user using warnings.warn.
 
-class NonexistentAxesError(LoggerWarning):
-    """Raise when the specified x axes do not exist in the tabular.
+        The stacklevel parameter needs to be 3 to ensure the call to logger.log
+        is the one printed.
+        """
+        if not self._disable_warnings and msg not in self._warned_once:
+            warnings.warn(
+                colorize(msg, 'yellow'), NonexistentAxesWarning, stacklevel=3)
+        self._warned_once.add(msg)
+        return msg
 
-    Args:
-        axes: Name of nonexistent axes.
+    def disable_warnings(self):
+        """Disable logger warnings for testing."""
+        self._disable_warnings = True
 
-    """
 
-    def __init__(self, axes):
-        self.axes = axes
-
-    def to_string(self):
-        return '{} {} exist in the tabular data.'.format(
-            ', '.join(self.axes),
-            'do not' if len(self.axes) > 1 else 'does not')
+class NonexistentAxesWarning(LoggerWarning):
+    """Raise when the specified x axes do not exist in the tabular."""
