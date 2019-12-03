@@ -29,8 +29,9 @@ extras['dev'] = [
     'pre-commit',
     'pydocstyle<4.0.0',
     'pylint',
-    'pytest>=3.6',  # Required for pytest-cov on Python 3.6
+    'pytest>=4.4.0',  # Required for pytest-xdist
     'pytest-cov',
+    'pytest-xdist',
     'sphinx',
     'recommonmark',
     'yapf',
