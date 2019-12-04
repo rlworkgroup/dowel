@@ -199,7 +199,7 @@ class TestTensorBoardOutputXAxesMocked(TBOutputTest):
         self.tensor_board_output.record(self.tabular)
         self.tensor_board_output.dump()
 
-        self.mock_writer.add_scalar.assert_any_call('foo@bar', foo, bar)
+        self.mock_writer.add_scalar.assert_any_call('foo/bar', foo, bar)
         self.mock_writer.add_scalar.assert_any_call('bar', bar, foo)
         assert self.mock_writer.add_scalar.call_count == 2
 
