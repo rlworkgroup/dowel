@@ -112,7 +112,7 @@ class TensorBoardOutput(LogOutput):
                 for axis in self._additional_x_axes:
                     if key is not axis and key in data.as_dict:
                         x = data.as_dict[axis]
-                        self._record_kv('{}@{}'.format(key, axis), value, x)
+                        self._record_kv('{}/{}'.format(key, axis), value, x)
             else:
                 self._record_kv(key, value, step)
             data.mark(key)
