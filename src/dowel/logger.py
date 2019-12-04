@@ -289,6 +289,7 @@ class Logger:
         logger.log('test_string2') # this will not have the prefix
 
         :param prefix: The prefix string to be logged.
+
         """
         self.push_prefix(prefix)
         try:
