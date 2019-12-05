@@ -1,0 +1,11 @@
+[MASTER]
+# Go as fast as you can
+jobs = 0
+
+[MESSAGES CONTROL]
+disable = all
+enable = F0401
+
+[REPORTS]
+msg-template = {path}:{line:3d},{column}: {msg} ({symbol})
+output-format = colorized

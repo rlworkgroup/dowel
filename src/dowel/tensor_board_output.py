@@ -4,9 +4,10 @@ It receives the input data stream from `dowel.logger`, then add them to
 tensorboard summary operations through tensorboardX.
 
 Note:
-Neither TensorboardX nor TensorBoard supports log parametric
-distributions. We add this feature by sampling data from a
-`tfp.distributions.Distribution` object.
+    Neither TensorboardX nor TensorBoard supports log parametric
+    distributions. We add this feature by sampling data from a
+    `tfp.distributions.Distribution` object.
+
 """
 import functools
 import warnings
@@ -40,6 +41,7 @@ class TensorBoardOutput(LogOutput):
             and events to disk.
         histogram_samples(int): Number of samples to generate when logging
             random distribution.
+
     """
 
     def __init__(self,
@@ -161,8 +163,9 @@ class TensorBoardOutput(LogOutput):
         is the one printed.
         """
         if not self._disable_warnings and msg not in self._warned_once:
-            warnings.warn(
-                colorize(msg, 'yellow'), NonexistentAxesWarning, stacklevel=3)
+            warnings.warn(colorize(msg, 'yellow'),
+                          NonexistentAxesWarning,
+                          stacklevel=3)
         self._warned_once.add(msg)
         return msg
 

@@ -1,3 +1,10 @@
+"""Minimal example of dowel usage.
+
+This example demonstrates how to log a simple progress metric using dowel.
+
+The metric is simultaneously sent to the screen, a CSV files, a text log file
+and TensorBoard.
+"""
 import time
 
 import dowel

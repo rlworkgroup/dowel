@@ -32,11 +32,13 @@ install:
   - pip install .[all,dev]
 
 script:
-  - scripts/travisci/check_precommit.sh
+  # only run pre-commit checks on PRs
+  - if [[ "${TRAVIS_EVENT_TYPE}" == "pull_request" ]]; then
+      scripts/travisci/check_precommit.sh;
+    fi
   - flake8 --version
-  - flake8 src
-  - flake8 --exclude=src,docs --extend-ignore=D
-  - pytest -n auto --cov=dowel
+  - flake8
+  - pytest --cov=dowel
   - pushd docs && make html && popd
 
 after_script:
