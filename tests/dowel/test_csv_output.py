@@ -1,39 +1,21 @@
 import csv
-import sys
 import tempfile
-import unittest
-import warnings
+
+import pytest
 
 from dowel import CsvOutput, TabularInput
 from dowel.csv_output import CsvOutputWarning
 
 
-def patched_assert_warns(self):
-    # Stolen from cpython PR#4800. Fixes assertWarns in the presence of modules
-    # that import in response to getattr calls.
-    # The __warningregistry__'s need to be in a pristine state for tests
-    # to work properly.
-    for v in list(sys.modules.values()):
-        if getattr(v, '__warningregistry__', None):
-            v.__warningregistry__ = {}
-    self.warnings_manager = warnings.catch_warnings(record=True)
-    self.warnings = self.warnings_manager.__enter__()
-    warnings.simplefilter('always', self.expected)
-    return self
+class TestCsvOutput:
 
-
-# This is a hack we should undo when cpython#4800 is merged.
-unittest.case._AssertWarnsContext.__enter__ = patched_assert_warns
-
-
-class TestCsvOutput(unittest.TestCase):
-    def setUp(self):
+    def setup_method(self):
         self.log_file = tempfile.NamedTemporaryFile()
         self.csv_output = CsvOutput(self.log_file.name)
         self.tabular = TabularInput()
         self.tabular.clear()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.log_file.close()
 
     def test_record(self):
@@ -61,7 +43,7 @@ class TestCsvOutput(unittest.TestCase):
         self.tabular.record('foo', foo * 2)
         self.tabular.record('bar', bar * 2)
 
-        with self.assertWarns(CsvOutputWarning):
+        with pytest.warns(CsvOutputWarning):
             self.csv_output.record(self.tabular)
 
         # this should not produce a warning, because we only warn once
@@ -87,7 +69,7 @@ class TestCsvOutput(unittest.TestCase):
         assert not self.csv_output._warned_once
 
     def test_unacceptable_type(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.csv_output.record('foo')
 
     def test_disable_warnings(self):
@@ -110,4 +92,4 @@ class TestCsvOutput(unittest.TestCase):
 
             for correct_row in correct:
                 row = next(reader)
-                self.assertDictEqual(row, correct_row)
+                assert row == correct_row

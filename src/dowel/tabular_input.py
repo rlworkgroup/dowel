@@ -55,11 +55,11 @@ class TabularInput:
         :param placement: Whether to put the prefix in front or in the back.
         """
         if placement == 'front':
-            front = ""
+            front = ''
             back = key
         else:
             front = key
-            back = ""
+            back = ''
         if values:
             self.record(front + 'Average' + back, np.average(values))
             self.record(front + 'Std' + back, np.std(values))
@@ -138,8 +138,9 @@ class TabularInput:
         is the one printed.
         """
         if not self._disable_warnings and msg not in self._warned_once:
-            warnings.warn(
-                colorize(msg, 'yellow'), TabularInputWarning, stacklevel=3)
+            warnings.warn(colorize(msg, 'yellow'),
+                          TabularInputWarning,
+                          stacklevel=3)
         self._warned_once.add(msg)
         return msg
 

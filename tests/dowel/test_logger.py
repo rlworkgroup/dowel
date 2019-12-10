@@ -1,13 +1,15 @@
-import unittest
+from unittest import mock
+
+import pytest
 
 from dowel import Logger, LogOutput
 from dowel.logger import LoggerWarning
 
 
-class TestLogger(unittest.TestCase):
-    def setUp(self):
-        self.mock_output = unittest.mock.Mock(
-            spec=LogOutput, types_accepted=(str, ))
+class TestLogger:
+
+    def setup_method(self):
+        self.mock_output = mock.Mock(spec=LogOutput, types_accepted=(str, ))
         self.mock_output_type = type(self.mock_output)
         self.logger = Logger()
 
@@ -16,11 +18,11 @@ class TestLogger(unittest.TestCase):
         assert self.logger.has_output_type(self.mock_output_type)
 
     def test_add_uninstantiated_output(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.logger.add_output(self.mock_output_type)
 
     def test_add_unknown_output(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.logger.add_output('foo')
 
     def test_log(self):
@@ -29,11 +31,11 @@ class TestLogger(unittest.TestCase):
         self.mock_output.record.assert_called_with('foo', prefix='')
 
     def test_log_with_no_output(self):
-        with self.assertWarns(LoggerWarning):
+        with pytest.warns(LoggerWarning):
             self.logger.log('foo')
 
     def test_log_with_no_logged(self):
-        with self.assertWarns(LoggerWarning):
+        with pytest.warns(LoggerWarning):
             self.logger.add_output(self.mock_output)
             self.logger.log(dict())
 

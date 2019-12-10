@@ -118,9 +118,9 @@ logger.log(tabular)
        +---tabular--->CsvOutput|
                      +---------+
 
-Note that LogOutputs which consume TabularInputs must call TabularInput.mark()
-on each key they log. This helps the logger detect when tabular data is not
-logged.
+# Note that LogOutputs which consume TabularInputs must call
+# TabularInput.mark() on each key they log. This helps the logger detect when
+# tabular data is not logged.
 
 # Console Output:
 ---  ---

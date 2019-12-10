@@ -2,8 +2,9 @@ from contextlib import redirect_stdout
 import datetime
 import io
 import tempfile
-import unittest
 from unittest import mock
+
+import pytest
 
 from dowel import StdOutput, TabularInput, TextOutput
 
@@ -17,13 +18,14 @@ def fake_timestamp(mock_datetime):
 
 
 @mock.patch('dowel.simple_outputs.datetime')
-class TestTextOutput(unittest.TestCase):
-    def setUp(self):
+class TestTextOutput:
+
+    def setup_method(self):
         self.log_file = tempfile.NamedTemporaryFile()
         self.text_output = TextOutput(self.log_file.name)
         self.tabular = TabularInput()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.log_file.close()
 
     def test_record(self, mock_datetime):
@@ -80,18 +82,19 @@ class TestTextOutput(unittest.TestCase):
             assert file.read() == tab
 
     def test_record_unknown(self, mock_datetime):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.text_output.record(dict())
 
 
 @mock.patch('dowel.simple_outputs.datetime')
-class TestStdOutput(unittest.TestCase):
-    def setUp(self):
+class TestStdOutput:
+
+    def setup_method(self):
         self.tabular = TabularInput()
         self.std_output = StdOutput(with_timestamp=False)
         self.str_out = io.StringIO()
 
-    def tearDown(self):
+    def teardown_method(self):
         self.str_out.close()
 
     def test_record_str(self, mock_datetime):
@@ -140,5 +143,5 @@ class TestStdOutput(unittest.TestCase):
         assert contents == '{} | DOWEL\n'.format(FAKE_TIMESTAMP_SHORT)
 
     def test_record_unknown(self, mock_datetime):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             self.std_output.record(dict())
