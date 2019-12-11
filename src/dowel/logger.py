@@ -5,17 +5,18 @@ output.
 
 The logger has 4 major steps:
 
-    1. Inputs, such as a simple string or something more complicated like
-    TabularInput, are passed to the log() method of an instantiated Logger.
+  1. Inputs, such as a simple string or something more complicated like
+     a distribution, are passed to the log() or logkv() method of an
+     instantiated Logger.
 
-    2. The Logger class checks for any outputs that have been added to it, and
-    calls the record() method of any outputs that accept the type of input.
+  2. The Logger class checks for any outputs that have been added to it, and
+     calls the record() method of any outputs that accept the type of input.
 
-    3. The output (a subclass of LogOutput) receives the input via its record()
-    method and handles it in whatever way is expected.
+  3. The output (a subclass of LogOutput) receives the input via its record()
+     method and handles it in whatever way is expected.
 
-    4. (only in some cases) The dump method is used to dump the output to file.
-    It is necessary for some LogOutput subclasses, like TensorBoardOutput.
+  4. (only in some cases) The dump method is used to dump the output to file
+     and to log any key-value pairs that have been stored.
 
 
 # Here's a demonstration of dowel:
@@ -61,8 +62,52 @@ logger.add_output(TextOutput('log_folder/log.txt'))
 
 # And another output.
 
-from dowel import CsvOutput
-logger.add_output(CsvOutput('log_folder/table.csv'))
+from dowel import TensorBoardOutput
+logger.add_output(TensorBoardOutput('log_folder/tensorboard'))
+
+              +---------+
+       +------>StdOutput|
+       |      +---------+
+       |
++------+      +----------+
+|logger+------>TextOutput|
++------+      +----------+
+       |
+       |      +-----------------+
+       +------>TensorBoardOutput|
+              +-----------------+
+
+# The logger will record anything passed to logger.log to all outputs that
+#  accept its type.
+
+
+# Now let's try logging a string again.
+
+logger.log('test')
+
+                    +---------+
+       +---'test'--->StdOutput|
+       |            +---------+
+       |
++------+            +----------+
+|logger+---'test'--->TextOutput|
++------+            +----------+
+       |
+       |            +-----------------+
+       +-----!!----->TensorBoardOutput|
+                    +-----------------+
+
+# !! Note that the logger knows not to send 'test' to TensorBoardOutput.
+#  Similarly, more complex objects like tf.Graph won't be sent to (for
+#  example) TextOutput.
+# This behavior is defined in each output's types_accepted property
+
+# Here's a more complex example.
+# We can log key-value pairs using logger.logkv
+
+logger.logkv('key', 72)
+logger.logkv('foo', 'bar')
+logger.dump_all()
 
               +---------+
        +------>StdOutput|
@@ -76,51 +121,8 @@ logger.add_output(CsvOutput('log_folder/table.csv'))
        +------>CsvOutput|
               +---------+
 
-# The logger will record anything passed to logger.log to all outputs that
-#  accept its type.
-
-logger.log('test')
-
-                    +---------+
-       +---'test'--->StdOutput|
-       |            +---------+
-       |
-+------+            +----------+
-|logger+---'test'--->TextOutput|
-+------+            +----------+
-       |
-       |            +---------+
-       +-----!!----->CsvOutput|
-                    +---------+
-
-# !! Note that the logger knows not to send CsvOutput the string 'test'
-#  Similarly, more complex objects like tf.tensor won't be sent to (for
-#  example) TextOutput.
-# This behavior is defined in each output's types_accepted property
-
-# Here's a more complex example.
-# TabularInput, instantiated for you as the tabular, can log key/value pairs.
-
-from dowel import tabular
-tabular.record('key', 72)
-tabular.record('foo', 'bar')
-logger.log(tabular)
-
-                     +---------+
-       +---tabular--->StdOutput|
-       |             +---------+
-       |
-+------+             +----------+
-|logger+---tabular--->TextOutput|
-+------+             +----------+
-       |
-       |             +---------+
-       +---tabular--->CsvOutput|
-                     +---------+
-
-# Note that LogOutputs which consume TabularInputs must call
-# TabularInput.mark() on each key they log. This helps the logger detect when
-# tabular data is not logged.
+# Note that the key-value pairs are saved in each output until we call
+#  dump_all().
 
 # Console Output:
 ---  ---
@@ -133,29 +135,37 @@ foo  bar
 """
 import abc
 import contextlib
+import re
 import warnings
 
 from dowel.utils import colorize
 
 
 class LogOutput(abc.ABC):
-    """Abstract class for Logger Outputs."""
+    """Abstract class for Logger Outputs.
+
+    :param keys_accepted: Regex for which keys this output should accept.
+    """
+
+    def __init__(self, keys_accepted=r'^$'):
+        self._keys_accepted = keys_accepted
 
     @property
     def types_accepted(self):
-        """Pass these types to this logger output.
-
-        The types in this tuple will be accepted by this output.
-
-        :return: A tuple containing all valid input types.
-        """
+        """Returns a tuple containing all valid input value types."""
         return ()
 
+    @property
+    def keys_accepted(self):
+        """Returns a regex string matching keys to be sent to this output."""
+        return self._keys_accepted
+
     @abc.abstractmethod
-    def record(self, data, prefix=''):
+    def record(self, key, value, prefix=''):
         """Pass logger data to this output.
 
-        :param data: The data to be logged by the output.
+        :param key: The key to be logged by the output.
+        :param value: The value to be logged by the output.
         :param prefix: A prefix placed before a log entry in text outputs.
         """
         pass
@@ -186,7 +196,7 @@ class Logger:
         self._warned_once = set()
         self._disable_warnings = False
 
-    def log(self, data):
+    def logkv(self, key, value):
         """Magic method that takes in all different types of input.
 
         This method is the main API for the logger. Any data to be logged goes
@@ -195,7 +205,8 @@ class Logger:
         Any data sent to this method is sent to all outputs that accept its
         type (defined in the types_accepted property).
 
-        :param data: Data to be logged. This can be any type specified in the
+        :param key: Key to be logged. This must be a string.
+        :param value: Value to be logged. This can be any type specified in the
          types_accepted property of any of the logger outputs.
         """
         if not self._outputs:
@@ -203,15 +214,20 @@ class Logger:
 
         at_least_one_logged = False
         for output in self._outputs:
-            if isinstance(data, output.types_accepted):
-                output.record(data, prefix=self._prefix_str)
+            if isinstance(value, output.types_accepted) and re.match(
+                    output.keys_accepted, key):
+                output.record(key, value, prefix=self._prefix_str)
                 at_least_one_logged = True
 
         if not at_least_one_logged:
             warning = (
                 'Log data of type {} was not accepted by any output'.format(
-                    type(data).__name__))
+                    type(value).__name__))
             self._warn(warning)
+
+    def log(self, value):
+        """Log just a value without a key."""
+        self.logkv('', value)
 
     def add_output(self, output):
         """Add a new output to the logger.

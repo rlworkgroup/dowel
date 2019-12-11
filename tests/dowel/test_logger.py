@@ -6,10 +6,17 @@ from dowel import Logger, LogOutput
 from dowel.logger import LoggerWarning
 
 
+def check_misc(output):
+    assert output.types_accepted
+    assert output.keys_accepted
+
+
 class TestLogger:
 
     def setup_method(self):
-        self.mock_output = mock.Mock(spec=LogOutput, types_accepted=(str, ))
+        self.mock_output = mock.Mock(spec=LogOutput,
+                                     types_accepted=(str, ),
+                                     keys_accepted='^')
         self.mock_output_type = type(self.mock_output)
         self.logger = Logger()
 
@@ -28,7 +35,7 @@ class TestLogger:
     def test_log(self):
         self.logger.add_output(self.mock_output)
         self.logger.log('foo')
-        self.mock_output.record.assert_called_with('foo', prefix='')
+        self.mock_output.record.assert_called_with('', 'foo', prefix='')
 
     def test_log_with_no_output(self):
         with pytest.warns(LoggerWarning):
@@ -43,7 +50,7 @@ class TestLogger:
         with self.logger.prefix('a/'):
             self.logger.add_output(self.mock_output)
             self.logger.log('foo')
-            self.mock_output.record.assert_called_with('foo', prefix='a/')
+            self.mock_output.record.assert_called_with('', 'foo', prefix='a/')
 
     def test_remove_output_type(self):
         self.logger.add_output(self.mock_output)

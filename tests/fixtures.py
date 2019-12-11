@@ -1,4 +1,4 @@
-from dowel import LogOutput, TabularInput
+from dowel import LogOutput, Tabular
 
 
 class NullOutput(LogOutput):
@@ -11,5 +11,5 @@ class NullOutput(LogOutput):
 
     def record(self, data, prefix=''):
         """Don't do anything."""
-        if isinstance(data, TabularInput):
+        if isinstance(data, Tabular):
             data.mark_all()

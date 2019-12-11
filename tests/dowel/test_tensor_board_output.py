@@ -9,8 +9,8 @@ import scipy.stats
 
 from dowel import Histogram
 from dowel import logger
-from dowel import TabularInput
 from dowel import TensorBoardOutput
+from tests.dowel.test_logger import check_misc
 from tests.fixtures import NullOutput
 
 try:
@@ -48,8 +48,6 @@ class TBOutputTest(TfGraphTestCase):
     def setup_method(self):
         super().setup_method()
         self.log_dir = tempfile.TemporaryDirectory()
-        self.tabular = TabularInput()
-        self.tabular.clear()
         self.tensor_board_output = TensorBoardOutput(self.log_dir.name)
 
     def teardown_method(self):
@@ -67,9 +65,8 @@ class TestTensorBoardOutput(TBOutputTest):
     def test_record_scalar(self):
         foo = 5
         bar = 10.0
-        self.tabular.record('foo', foo)
-        self.tabular.record('bar', bar)
-        self.tensor_board_output.record(self.tabular)
+        self.tensor_board_output.record('foo', foo)
+        self.tensor_board_output.record('bar', bar)
         self.tensor_board_output.dump()
 
 
@@ -85,7 +82,7 @@ class TestTensorBoardOutputMocked(TBOutputTest):
     def test_record_graph(self):
         with mock.patch('tensorboardX.SummaryWriter'):
             foo = tf.constant(5)  # noqa: F841
-            self.tensor_board_output.record(self.graph)
+            self.tensor_board_output.record('', self.graph)
 
             assert self.mock_writer.file_writer.add_event.call_count == 1
 
@@ -93,9 +90,8 @@ class TestTensorBoardOutputMocked(TBOutputTest):
         with mock.patch('tensorboardX.SummaryWriter'):
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
@@ -108,8 +104,7 @@ class TestTensorBoardOutputMocked(TBOutputTest):
             xs = np.arange(10.0)
             ys = xs**2
             ax.scatter(xs, ys)
-            self.tabular.record('baz', fig)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('baz', fig)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_figure.assert_called_once_with('baz', fig, 0)
@@ -118,9 +113,8 @@ class TestTensorBoardOutputMocked(TBOutputTest):
         with mock.patch('tensorboardX.SummaryWriter'):
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular, prefix='a/')
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
@@ -134,11 +128,10 @@ class TestTensorBoardOutputMocked(TBOutputTest):
             poisson = scipy.stats.poisson(mu=0.3 * shape)
             uniform = scipy.stats.randint(high=shape, low=-shape)
 
-            self.tabular.record('Normal', normal)
-            self.tabular.record('Gamma', gamma)
-            self.tabular.record('Poisson', poisson)
-            self.tabular.record('Uniform', uniform)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('Normal', normal)
+            self.tensor_board_output.record('Gamma', gamma)
+            self.tensor_board_output.record('Poisson', poisson)
+            self.tensor_board_output.record('Uniform', uniform)
             self.tensor_board_output.dump()
 
             assert self.mock_writer.add_histogram.call_count == 4
@@ -148,8 +141,7 @@ class TestTensorBoardOutputMocked(TBOutputTest):
             mvn = scipy.stats.multivariate_normal(mean=np.ones(10),
                                                   cov=2.0 * np.ones(10))
 
-            self.tabular.record('MultivariateNormal', mvn)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('MultivariateNormal', mvn)
             self.tensor_board_output.dump()
 
             assert self.mock_writer.add_histogram.call_count == 1
@@ -159,24 +151,16 @@ class TestTensorBoardOutputMocked(TBOutputTest):
             norm = scipy.stats.norm(loc=[1., 0.], scale=[0.5, 1.5])
             samples = norm.rvs((10000, 2))
             hist = Histogram(samples)
-            self.tabular.record('Samples', hist)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('Samples', hist)
             self.tensor_board_output.dump()
 
             assert self.mock_writer.add_histogram.call_count == 1
-
-    def test_unknown_tabular_value(self):
-        with mock.patch('tensorboardX.SummaryWriter'):
-            self.tabular.record('foo', dict())
-            self.tensor_board_output.record(self.tabular)
-            self.tensor_board_output.dump()
-            # 'foo' should be silently ignored
 
     def test_unknown_input_type(self):
         with mock.patch('tensorboardX.SummaryWriter'):
             with pytest.raises(ValueError):
                 foo = np.zeros((3, 10))
-                self.tensor_board_output.record(foo)
+                self.tensor_board_output.record('', foo)
 
     def test_record_tabular_without_tensorflow(self):
         with mock.patch('tensorboardX.SummaryWriter'):
@@ -184,23 +168,15 @@ class TestTensorBoardOutputMocked(TBOutputTest):
             self.tensor_board_output._tf = None
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular, prefix='a/')
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
             self.mock_writer.add_scalar.assert_any_call('bar', bar, 0)
 
-    @pytest.mark.skipif(tf is None, reason='tensorflow not found')
-    def test_types_accepted(self):
-        assert TabularInput in self.tensor_board_output.types_accepted
-        assert tf.Graph in self.tensor_board_output.types_accepted
-
-    def test_types_accepted_without_tensorflow(self):
-        # Emulate not importing Tensorflow
-        self.tensor_board_output._tf = None
-        assert TabularInput in self.tensor_board_output.types_accepted
+    def test_misc(self):
+        check_misc(self.tensor_board_output)
 
 
 class TestTensorBoardOutputXAxesMocked(TBOutputTest):
@@ -218,9 +194,8 @@ class TestTensorBoardOutputXAxesMocked(TBOutputTest):
 
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('bar', bar, foo)
@@ -233,9 +208,8 @@ class TestTensorBoardOutputXAxesMocked(TBOutputTest):
 
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('foo/bar', foo, bar)
@@ -250,11 +224,13 @@ class TestTensorBoardOutputXAxesMocked(TBOutputTest):
 
             foo = 5
             bar = 10.0
-            self.tabular.record('foo', foo)
-            self.tabular.record('bar', bar)
-            self.tensor_board_output.record(self.tabular)
+            self.tensor_board_output.record('foo', foo)
+            self.tensor_board_output.record('bar', bar)
             self.tensor_board_output.dump()
 
             self.mock_writer.add_scalar.assert_any_call('foo', foo, 0)
             self.mock_writer.add_scalar.assert_any_call('bar', bar, 0)
             assert self.mock_writer.add_scalar.call_count == 2
+
+    def test_misc(self):
+        check_misc(self.tensor_board_output)
