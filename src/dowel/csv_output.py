@@ -15,6 +15,7 @@ class CsvOutput(FileOutput):
 
     def __init__(self, file_name):
         super().__init__(file_name)
+        self.output_file = file_name
         self._writer = None
         self._fieldnames = None
         self._warned_once = set()
@@ -42,13 +43,35 @@ class CsvOutput(FileOutput):
                 self._writer.writeheader()
 
             if to_csv.keys() != self._fieldnames:
+                # add different keys to fieldnames
+                diff_keys = list()
+                for key in to_csv.keys():
+                    if key not in self._fieldnames:
+                        diff_keys.append(key)        
+                    self._fieldnames.add(key)
+                
+                with open(self.output_file, "r") as orig:
+                    prev_reader = csv.DictReader(orig)
+
+                    # need to create a new DictWriter object with new fieldnames
+                    self._writer = csv.DictWriter(
+                        self._log_file,
+                        fieldnames=sorted(list(self._fieldnames)),
+                        extrasaction='ignore')
+
+                    self._log_file.seek(0)
+                    self._writer.writeheader()
+
+                    for row in prev_reader:
+                        self._writer.writerow(row)
+                """
                 self._warn('Inconsistent TabularInput keys detected. '
                            'CsvOutput keys: {}. '
                            'TabularInput keys: {}. '
                            'Did you change key sets after your first '
                            'logger.log(TabularInput)?'.format(
                                set(self._fieldnames), set(to_csv.keys())))
-
+                """
             self._writer.writerow(to_csv)
 
             for k in to_csv.keys():
