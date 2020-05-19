@@ -99,11 +99,20 @@ class TestCsvOutput:
             self.csv_output.record(self.tabular)
             self.csv_output.dump()
 
+        # test if we have a record with only a new key (doesn't share any keys with previous)
+        self.tabular.record('itr', '')
+        self.tabular.record('loss', '')
+        self.tabular.record('new_data', '')
+        self.tabular.record('new_new', 10)
+        self.csv_output.record(self.tabular)
+        self.csv_output.dump()
+
         correct = [
-            {'itr': str(0), 'loss': str(50.0), 'new_data': ''},
-            {'itr': str(1), 'loss': str(100.0/3.), 'new_data': str(1)},
-            {'itr': str(2), 'loss': str(25.0), 'new_data': str(2)},
-            {'itr': str(3), 'loss': str(20.0), 'new_data': str(3)}
+            {'itr': str(0), 'loss': str(50.0), 'new_data': '', 'new_new': ''},
+            {'itr': str(1), 'loss': str(100.0/3.), 'new_data': str(1), 'new_new': ''},
+            {'itr': str(2), 'loss': str(25.0), 'new_data': str(2), 'new_new': ''},
+            {'itr': str(3), 'loss': str(20.0), 'new_data': str(3), 'new_new': ''},
+            {'itr': '', 'loss': '', 'new_data': '', 'new_new': str(10)}
         ]
         self.assert_csv_matches(correct)
 
