@@ -146,3 +146,9 @@ tags
 
 # MacOS
 .DS_Store
+# code editor header info
+.vscode/
+
+# log outputs
+*.csv
+tensorboard_logdir/
