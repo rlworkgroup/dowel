@@ -17,6 +17,8 @@ class CsvOutput(FileOutput):
         super().__init__(file_name)
         self._writer = None
         self._fieldnames = None
+        self._filename = file_name
+        self._joint_filednames = None
         self._warned_once = set()
         self._disable_warnings = False
 
@@ -48,7 +50,35 @@ class CsvOutput(FileOutput):
                            'Did you change key sets after your first '
                            'logger.log(TabularInput)?'.format(
                                set(self._fieldnames), set(to_csv.keys())))
+                
+                # close any existing log file
+                super().close()
 
+                # Read data from the existing log file once
+                with open(self._filename, 'r') as existing_file:
+                    reader = csv.DictReader(existing_file)
+                    file_data = []
+                    for row in reader:
+                        file_data.append(row)
+
+                    # Update header with new keys by union 
+                    self._joint_filednames = set(self._fieldnames)| set(to_csv.keys())
+
+                    # Update the writer with joint headers
+                    self._writer = csv.DictWriter(
+                        self._log_file,
+                        fieldnames=self._joint_filednames,
+                        restval='',
+                        extrasaction='ignore')
+
+                     # Write data to file. Cell is blank for missing value of new key(s).
+                    self._log_file.seek(0)
+                    self._writer.writeheader()
+                    for row in file_data:
+                        self._writer.writerow(row)
+                        
+                    existing_file.close()
+                    
             self._writer.writerow(to_csv)
 
             for k in to_csv.keys():

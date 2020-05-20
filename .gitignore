@@ -130,3 +130,10 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
+
+# code editor header info
+.vscode/
+
+# log outputs
+*.csv
+tensorboard_logdir/

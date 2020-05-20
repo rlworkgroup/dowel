@@ -57,6 +57,27 @@ class TestCsvOutput:
         ]  # yapf: disable
         self.assert_csv_matches(correct)
 
+    def test_key_inconsistent(self):
+        for i in range(4):
+            self.tabular.record('itr', i)
+            self.tabular.record('loss', 100.0 / (2 + i))
+
+            # the addition of new data to tabular breaks logging to CSV
+            if i > 0:
+                self.tabular.record('new_data', i)
+
+            # this should not produce a warning, because we only warn once
+            self.csv_output.record(self.tabular)
+            self.csv_output.dump()
+
+        correct = [
+            {'itr': str(0), 'loss': str(100.0/2.), 'new_data': ''},
+            {'itr': str(1), 'loss': str(100.0/3.), 'new_data': str(1)},
+            {'itr': str(2), 'loss': str(100.0/4.), 'new_data': str(2)},
+            {'itr': str(3), 'loss': str(100.0/5.), 'new_data': str(3)}
+        ]
+        self.assert_csv_matches(correct)
+        
     def test_empty_record(self):
         self.csv_output.record(self.tabular)
         assert not self.csv_output._writer
