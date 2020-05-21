@@ -57,6 +57,7 @@ class FileOutput(LogOutput, metaclass=abc.ABCMeta):
     """
 
     def __init__(self, file_name, mode='w'):
+        self._file_name = file_name
         mkdir_p(os.path.dirname(file_name))
         # Open the log file in child class
         self._log_file = open(file_name, mode)

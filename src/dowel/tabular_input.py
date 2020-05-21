@@ -35,6 +35,11 @@ class TabularInput:
         """
         self._dict[self._prefix_str + str(key)] = val
 
+    def reset(self):
+        """Reset values to the empty string"""
+        for k, v in self._dict.items():
+            self._dict[k] = ""
+
     def mark(self, key):
         """Mark key as recorded."""
         self._recorded.add(key)

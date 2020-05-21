@@ -135,6 +135,7 @@ import abc
 import contextlib
 import warnings
 
+from dowel.tabular_input import TabularInput
 from dowel.utils import colorize
 
 
@@ -196,7 +197,9 @@ class Logger:
         type (defined in the types_accepted property).
 
         :param data: Data to be logged. This can be any type specified in the
-         types_accepted property of any of the logger outputs.
+         types_accepted property of any of the logger outputs. If the data is
+         a TabularInput instance, it won't be deleted, thus to prevent spill
+         over from unupdated keys, its values need be reset.
         """
         if not self._outputs:
             self._warn('No outputs have been added to the logger.')
@@ -206,6 +209,8 @@ class Logger:
             if isinstance(data, output.types_accepted):
                 output.record(data, prefix=self._prefix_str)
                 at_least_one_logged = True
+        if at_least_one_logged and isinstance(data, TabularInput):
+            data.reset()
 
         if not at_least_one_logged:
             warning = (

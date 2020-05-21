@@ -11,6 +11,7 @@ Note:
 """
 import functools
 import warnings
+from copy import deepcopy
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -85,6 +86,7 @@ class TensorBoardOutput(LogOutput):
             prefix(str): A prefix placed before a log entry in text outputs.
 
         """
+        data = deepcopy(data)
         if isinstance(data, TabularInput):
             self._waiting_for_dump.append(
                 functools.partial(self._record_tabular, data))

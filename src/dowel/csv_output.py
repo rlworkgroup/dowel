@@ -1,6 +1,8 @@
 """A `dowel.logger.LogOutput` for CSV files."""
 import csv
+import os
 import warnings
+from copy import deepcopy
 
 from dowel import TabularInput
 from dowel.simple_outputs import FileOutput
@@ -26,6 +28,7 @@ class CsvOutput(FileOutput):
         return (TabularInput, )
 
     def record(self, data, prefix=''):
+        print("Log CSV")
         """Log tabular data to CSV."""
         if isinstance(data, TabularInput):
             to_csv = data.as_primitive_dict
@@ -41,13 +44,8 @@ class CsvOutput(FileOutput):
                     extrasaction='ignore')
                 self._writer.writeheader()
 
-            if to_csv.keys() != self._fieldnames:
-                self._warn('Inconsistent TabularInput keys detected. '
-                           'CsvOutput keys: {}. '
-                           'TabularInput keys: {}. '
-                           'Did you change key sets after your first '
-                           'logger.log(TabularInput)?'.format(
-                               set(self._fieldnames), set(to_csv.keys())))
+            if len(set(to_csv.keys()).difference(set(self._fieldnames))) > 0:
+                self._augment(deepcopy(data))
 
             self._writer.writerow(to_csv)
 
@@ -55,6 +53,36 @@ class CsvOutput(FileOutput):
                 data.mark(k)
         else:
             raise ValueError('Unacceptable type.')
+
+    def _augment(self, data):
+        """Augment tabular data with new column(s)"""
+        data.reset()
+        self._log_file.close()
+
+        temp_file = self._file_name.split(".")
+        temp_file = "".join(temp_file[:-1]) + "_temp." + temp_file[-1]
+        os.rename(self._file_name, temp_file)
+        old_file = open(temp_file, 'r')
+        self._log_file = open(self._file_name, 'w')
+
+        self._fieldnames = data.as_primitive_dict.keys()
+        self._writer = csv.DictWriter(
+                self._log_file,
+                fieldnames=self._fieldnames,
+                extrasaction='ignore')
+
+        self._writer.writeheader()
+
+        reader = csv.DictReader(old_file)
+        old_fields = reader.fieldnames
+        augmented_elements = set(self._fieldnames).difference(set(old_fields))
+        for row in reader:
+            for k, v in row.items():
+                data.record(k, v)
+            self._writer.writerow(data.as_primitive_dict)
+            data.reset()
+        os.remove(temp_file)
+        old_file.close()
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.
