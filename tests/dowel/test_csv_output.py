@@ -46,14 +46,19 @@ class TestCsvOutput:
         with pytest.warns(CsvOutputWarning):
             self.csv_output.record(self.tabular)
 
-        # this should not produce a warning, because we only warn once
+        self.tabular.record('baz', bar * 3)
+        self.tabular.record('foo', foo * 3)
+        self.tabular.record('bar', bar * 3)
+
+        with pytest.warns(CsvOutputWarning):
+            self.csv_output.record(self.tabular)
+
         self.csv_output.record(self.tabular)
 
         self.csv_output.dump()
 
         correct = [
-            {'foo': str(foo)},
-            {'foo': str(foo * 2)},
+            {'foo': str(foo * 3), 'bar': str(bar * 3), 'baz': str(bar * 3)}
         ]  # yapf: disable
         self.assert_csv_matches(correct)
 
