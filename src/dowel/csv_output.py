@@ -74,7 +74,7 @@ class CsvOutput(FileOutput):
         """update the header of the target CSV file"""
         self._log_file.flush()
         self._log_file.seek(0, 0)
-        content = ''.join(self._log_file.readlines()[2:])
+        content = ''.join(self._log_file.readlines()[1:])
         self._log_file.seek(0, 0)
         self._writer.writeheader()
         self._log_file.write(content)
