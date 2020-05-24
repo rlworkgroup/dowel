@@ -14,7 +14,7 @@ class CsvOutput(FileOutput):
     """
 
     def __init__(self, file_name):
-        super().__init__(file_name)
+        super().__init__(file_name, mode="w+")
         self._writer = None
         self._fieldnames = None
         self._warned_once = set()
@@ -34,20 +34,34 @@ class CsvOutput(FileOutput):
                 return
 
             if not self._writer:
-                self._fieldnames = set(to_csv.keys())
+                self._fieldnames = list(to_csv.keys())
                 self._writer = csv.DictWriter(
                     self._log_file,
                     fieldnames=self._fieldnames,
                     extrasaction='ignore')
                 self._writer.writeheader()
 
-            if to_csv.keys() != self._fieldnames:
+            if set(to_csv.keys()) != set(self._fieldnames):
                 self._warn('Inconsistent TabularInput keys detected. '
                            'CsvOutput keys: {}. '
                            'TabularInput keys: {}. '
-                           'Did you change key sets after your first '
-                           'logger.log(TabularInput)?'.format(
+                           'Newly appeared keys will be appended. '.format(
                                set(self._fieldnames), set(to_csv.keys())))
+                merged_fieldnames = list(self._fieldnames)
+                
+                """find and apply the delta between the keys"""
+                for i in to_csv.keys():
+                    if i not in self._fieldnames:
+                        merged_fieldnames.append(i)
+
+                """update the CSV output writer with new keys"""
+                self._fieldnames = merged_fieldnames
+                self._writer = csv.DictWriter(
+                    self._log_file,
+                    fieldnames=self._fieldnames,
+                    extrasaction='ignore')
+                self._update_header()
+                self._warn('Updated CSV keys: {}. '.format(self._fieldnames))
 
             self._writer.writerow(to_csv)
 
@@ -55,6 +69,15 @@ class CsvOutput(FileOutput):
                 data.mark(k)
         else:
             raise ValueError('Unacceptable type.')
+
+    def _update_header(self):
+        """update the header of the target CSV file"""
+        self._log_file.flush()
+        self._log_file.seek(0, 0)
+        content = ''.join(self._log_file.readlines()[2:])
+        self._log_file.seek(0, 0)
+        self._writer.writeheader()
+        self._log_file.write(content)
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.
