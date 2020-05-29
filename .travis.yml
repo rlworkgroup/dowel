@@ -26,10 +26,10 @@ jobs:
           tags: true
 
 before_install:
-  - pip install --upgrade pip  # some TravisCI images have outdated pip
+  - pip install --upgrade pip setuptools # some TravisCI images have outdated pip & setuptools
 
 install:
-  - pip install .[all,dev]
+  - pip install --force-reinstall .[all,dev] # Force reinstall to avoid stale dependency cache
 
 script:
   # only run pre-commit checks on PRs
