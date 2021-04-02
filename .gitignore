@@ -130,3 +130,19 @@ Sessionx.vim
 tags
 # Persistent undo
 [._]*.un~
+
+# garage-specific stuff below this line
+
+# IDEs and editors
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+*.swp
+*.orig
+.idea
+.settings
+.vscode/
+
+# MacOS
+.DS_Store
