@@ -1,0 +1,72 @@
+name: Dowel CI
+
+env:
+  PR_COMMIT_RANGE: origin/${{ github.base_ref }}...origin/${{ github.head_ref }}
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v\d+.\d+.\d+'
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build_and_test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .[all,dev]
+    - name: Run pre-commit
+      if: github.event_name == 'pull_request'
+      run: |
+        ./scripts/ci/check_precommit.sh
+    - name: Test with pytest
+      run: |
+        pytest -v --cov=dowel --cov-report=xml
+        bash <(curl -s https://codecov.io/bash)
+    - name: Test docs build
+      run: |
+        pushd docs && make html && popd
+
+
+  deploy_to_pypi:
+    name: Deploy to PyPI
+    runs-on: ubuntu-latest
+    needs: [build_and_test]
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python 3.6
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.6
+      - name: Update Version
+        run: echo ${GITHUB_REF##*/} > VERSION
+      - name: Setup Distribution
+        run: >-
+          python setup.py sdist
+      - name: Deploy to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_TOKEN }}
