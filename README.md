@@ -16,7 +16,7 @@ pip install dowel
 ## Usage
 ```python
 import dowel
-from dowel import logger, tabular
+from dowel import logger
 
 logger.add_output(dowel.StdOutput())
 logger.add_output(dowel.TensorBoardOutput('tensorboard_logdir'))
@@ -26,9 +26,8 @@ for i in range(1000):
     logger.push_prefix('itr {}'.format(i))
     logger.log('Running training step')
 
-    tabular.record('itr', i)
-    tabular.record('loss', 100.0 / (2 + i))
-    logger.log(tabular)
+    logger.logkv('itr', i)
+    logger.logkv('loss', 100.0 / (2 + i))
 
     logger.pop_prefix()
     logger.dump_all()

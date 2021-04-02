@@ -8,7 +8,7 @@ and TensorBoard.
 import time
 
 import dowel
-from dowel import logger, tabular
+from dowel import logger
 
 logger.add_output(dowel.StdOutput())
 logger.add_output(dowel.CsvOutput('progress.csv'))
@@ -22,9 +22,8 @@ for i in range(1000):
 
     time.sleep(0.01)  # Tensorboard doesn't like output to be too fast.
 
-    tabular.record('itr', i)
-    tabular.record('loss', 100.0 / (2 + i))
-    logger.log(tabular)
+    logger.logkv('itr', i)
+    logger.logkv('loss', 100.0 / (2 + i))
 
     logger.pop_prefix()
     logger.dump_all()

@@ -9,7 +9,6 @@ Note:
     `tfp.distributions.Distribution` object.
 
 """
-import functools
 import warnings
 
 import matplotlib.pyplot as plt
@@ -24,7 +23,6 @@ except ImportError:
 from dowel import Histogram
 from dowel import LoggerWarning
 from dowel import LogOutput
-from dowel import TabularInput
 from dowel.utils import colorize
 
 
@@ -33,6 +31,7 @@ class TensorBoardOutput(LogOutput):
 
     Args:
         log_dir(str): The save location of the tensorboard event files.
+        keys_accepted: Regex for which keys this output should accept.
         x_axis(str): The name of data used as x-axis for scalar tabular.
             If None, x-axis will be the number of dump() is called.
         additional_x_axes(list[str]): Names of data to used be as additional
@@ -46,10 +45,12 @@ class TensorBoardOutput(LogOutput):
 
     def __init__(self,
                  log_dir,
+                 keys_accepted=r'^\S+$',
                  x_axis=None,
                  additional_x_axes=None,
                  flush_secs=120,
                  histogram_samples=1e3):
+        super().__init__(keys_accepted=keys_accepted)
         if x_axis is None:
             assert not additional_x_axes, (
                 'You have to specify an x_axis if you want additional axes.')
@@ -62,7 +63,7 @@ class TensorBoardOutput(LogOutput):
         self._default_step = 0
         self._histogram_samples = int(histogram_samples)
         self._added_graph = False
-        self._waiting_for_dump = []
+        self._dict = {}
         # Used in tests to emulate Tensorflow not being installed.
         self._tf = tf
 
@@ -72,24 +73,31 @@ class TensorBoardOutput(LogOutput):
     @property
     def types_accepted(self):
         """Return the types that the logger may pass to this output."""
+        types = (plt.Figure, scipy.stats._distn_infrastructure.rv_frozen,
+                 scipy.stats._multivariate.multi_rv_frozen,
+                 Histogram) + np.ScalarType
+        types = list(types)
+        types.remove(str)
+        types.remove(np.str_)
+        types = tuple(types)
         if self._tf is None:
-            return (TabularInput, )
+            return types
         else:
-            return (TabularInput, self._tf.Graph)
+            return types + (self._tf.Graph, )
 
-    def record(self, data, prefix=''):
+    def record(self, key, value, prefix=''):
         """Add data to tensorboard summary.
 
         Args:
-            data: The data to be logged by the output.
+            key: The key to be logged by the output.
+            value: The value to be logged by the output.
             prefix(str): A prefix placed before a log entry in text outputs.
 
         """
-        if isinstance(data, TabularInput):
-            self._waiting_for_dump.append(
-                functools.partial(self._record_tabular, data))
-        elif self._tf is not None and isinstance(data, self._tf.Graph):
-            self._record_graph(data)
+        if self._tf is not None and isinstance(value, self._tf.Graph):
+            self._record_graph(value)
+        elif isinstance(value, self.types_accepted):
+            self._dict[key] = value
         else:
             raise ValueError('Unacceptable type.')
 
@@ -97,27 +105,25 @@ class TensorBoardOutput(LogOutput):
         if self._x_axis:
             nonexist_axes = []
             for axis in [self._x_axis] + self._additional_x_axes:
-                if axis not in data.as_dict:
+                if axis not in data:
                     nonexist_axes.append(axis)
             if nonexist_axes:
                 self._warn('{} {} exist in the tabular data.'.format(
                     ', '.join(nonexist_axes),
                     'do not' if len(nonexist_axes) > 1 else 'does not'))
 
-        for key, value in data.as_dict.items():
-            if isinstance(value,
-                          np.ScalarType) and self._x_axis in data.as_dict:
+        for key, value in data.items():
+            if isinstance(value, np.ScalarType) and self._x_axis in data:
                 if self._x_axis is not key:
-                    x = data.as_dict[self._x_axis]
+                    x = data[self._x_axis]
                     self._record_kv(key, value, x)
 
                 for axis in self._additional_x_axes:
-                    if key is not axis and key in data.as_dict:
-                        x = data.as_dict[axis]
+                    if key is not axis and key in data:
+                        x = data[axis]
                         self._record_kv('{}/{}'.format(key, axis), value, x)
             else:
                 self._record_kv(key, value, step)
-            data.mark(key)
 
     def _record_kv(self, key, value, step):
         if isinstance(value, np.ScalarType):
@@ -142,9 +148,7 @@ class TensorBoardOutput(LogOutput):
     def dump(self, step=None):
         """Flush summary writer to disk."""
         # Log the tabular inputs, now that we have a step
-        for p in self._waiting_for_dump:
-            p(step or self._default_step)
-        self._waiting_for_dump.clear()
+        self._record_tabular(self._dict, step or self._default_step)
 
         # Flush output files
         for w in self._writer.all_writers.values():
