@@ -1,6 +1,7 @@
 """A `dowel.logger` input for tabular (key-value) data."""
 import contextlib
 import warnings
+import wcwidth
 
 import numpy as np
 import tabulate
@@ -24,8 +25,23 @@ class TabularInput:
 
     def __str__(self):
         """Return a string representation of the table for the logger."""
-        return tabulate.tabulate(
-            sorted(self.as_primitive_dict.items(), key=lambda x: x[0]))
+        # Sort first, then pad.
+        lines = sorted(self.as_primitive_dict.items(), key=lambda x: x[0])
+        key_widths = [wcwidth.wcswidth(key) for key, value in lines]
+        max_key_width = max(key_widths, default=0)
+        padded_keys = []
+        for line, (key, value) in enumerate(lines):
+            padded_key = key
+            if line % 2 == 1:
+                key_width = wcwidth.wcswidth(key)
+                if key_width % 2 == 1 and key_width < max_key_width:
+                    padded_key += ' '
+                    key_width += 1
+                pad_width = (max_key_width - key_width) // 2
+                padded_key += ' .' * pad_width
+            padded_keys.append(padded_key)
+        values = [value for key, value in lines]
+        return tabulate.tabulate(zip(padded_keys, values))
 
     def record(self, key, val):
         """Save key/value entries for the table.

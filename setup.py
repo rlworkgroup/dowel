@@ -11,6 +11,7 @@ required = [
     'scipy',
     'tabulate',
     'tensorboardX',
+    'wcwidth',
 ]
 
 extras = dict()
