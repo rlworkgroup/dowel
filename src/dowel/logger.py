@@ -133,6 +133,8 @@ foo  bar
 """
 import abc
 import contextlib
+import io
+import sys
 import warnings
 
 from dowel.utils import colorize
@@ -185,8 +187,13 @@ class Logger:
         self._prefix_str = ''
         self._warned_once = set()
         self._disable_warnings = False
+        self._io_stderr = None
+        self._io_stdout = None
+        self._io_stderr_pos = 0
+        self._io_stdout_pos = 0
+        self._did_request_std_logging = False;
 
-    def log(self, data):
+    def log(self, data, flush_std_logs=True):
         """Magic method that takes in all different types of input.
 
         This method is the main API for the logger. Any data to be logged goes
@@ -201,6 +208,9 @@ class Logger:
         if not self._outputs:
             self._warn('No outputs have been added to the logger.')
 
+        if flush_std_logs:
+            self.log_std()
+
         at_least_one_logged = False
         for output in self._outputs:
             if isinstance(data, output.types_accepted):
@@ -212,6 +222,23 @@ class Logger:
                 'Log data of type {} was not accepted by any output'.format(
                     type(data).__name__))
             self._warn(warning)
+
+    def log_std(self):
+        if self._io_stderr is not None:
+            self._io_stderr.seek(self._io_stderr_pos, 0)
+            line = self._io_stderr.readline()
+            while line != '':
+                self.log(line, False)
+                line = self._io_stderr.readline()
+            self._io_stderr_pos = self._io_stderr.tell()
+
+        if self._io_stdout is not None:
+            self._io_stdout.seek(self._io_stdout_pos, 0)
+            line = self._io_stdout.readline()
+            while line != '':
+                self.log(line, False)
+                line = self._io_stderr.readline()
+            self._io_stdout_pos = self._io_stdout.tell()
 
     def add_output(self, output):
         """Add a new output to the logger.
@@ -276,6 +303,30 @@ class Logger:
         """
         for output in self._outputs:
             output.dump(step=step)
+
+    @contextlib.contextmanager
+    def redirect_stderr(self):
+        self._io_stderr = io.StringIO()
+        self._io_stderr_pos = self._io_stderr.tell()
+        try:
+            with contextlib.redirect_stderr(self._io_stderr) as redirecter:
+                yield redirecter
+        finally:
+            self.log_std()
+            self._io_stderr.close()
+            self._io_stderr = None
+
+    @contextlib.contextmanager
+    def redirect_stdout(self):
+        self._io_stdout = io.StringIO()
+        self._io_stdout_pos = self._io_stdout.tell()
+        try:
+            with contextlib.redirect_stdout(self._io_stdout) as redirecter:
+                yield redirecter
+        finally:
+            self.log_std()
+            self._io_stdout.close()
+            self._io_stdout = None
 
     @contextlib.contextmanager
     def prefix(self, prefix):

@@ -5,6 +5,7 @@ This example demonstrates how to log a simple progress metric using dowel.
 The metric is simultaneously sent to the screen, a CSV files, a text log file
 and TensorBoard.
 """
+import sys
 import time
 
 import dowel
@@ -28,5 +29,8 @@ for i in range(1000):
 
     logger.pop_prefix()
     logger.dump_all()
+
+with logger.redirect_stderr():
+    print('This is a fake shutdown error', file=sys.stderr)
 
 logger.remove_all()
