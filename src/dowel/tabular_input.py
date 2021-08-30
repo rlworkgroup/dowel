@@ -129,7 +129,8 @@ class TabularInput:
     @property
     def as_dict(self):
         """Return a dictionary of the tabular items."""
-        return self._dict
+        # Make a copy to avoid iteration errors
+        return self._dict.copy()
 
     def _warn(self, msg):
         """Warns the user using warnings.warn.
